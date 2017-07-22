@@ -4,8 +4,17 @@ var objSettings = objApp.CreateWizObject("WizKMCore.WizSettings");
 
 objSettings.Open(objApp.SettingsFileName);
 
-function addDocNo(){
-    var arr = document.body;
+function parseDom(arg) {
+    var objE = document.createElement("div");
+    objE.innerHTML = arg;
+    return objE.childNodes;
+}
+
+function addDocNo() {
+
+    var html = objApp.Window.CurrentDocument.GetHtml();
+
+    var htmlList = parseDom(html);
 
     var headerInfo = {
         "h1": 0,
@@ -15,23 +24,43 @@ function addDocNo(){
         'h5': 0,
         'h6': 0
     };
-    alert(arr.length);
-    for(var i = 0; i < arr.length; i++){
-        var elem = arr[i];
-        var tagName = elem.tagName.toLowerCase();
-        alert(1);
-        alert(tagName);
-        if(tagName != "h1"
-            && tagName != "h2"
-            && tagName != "h3"
-            && tagName != "h4"
-            && tagName != "h5"
-            && tagName != "h6")
-            continue;
 
-        alert(2);
+    var codeStrat = 0;
+    var finalStr = [];
+    for (var i = 0; i < htmlList.length; i++) {
+        finalStr.push('');
+        var elem = htmlList[i];
+        var tagName = elem.tagName;
+
+        if (tagName != undefined && tagName.toLowerCase() != 'div') {
+            continue
+        }
+
+        finalStr[i] = '<div>' + elem.textContent + '</div>';
+
+        var text = elem.textContent;
+
+        if (text.match('^`*')[0] != "") {
+            if (codeStrat == 0) {
+                codeStrat = 1;
+            } else {
+                codeStrat = 0;
+            }
+        }
+
+        if (codeStrat == 1) {
+            continue
+        }
+
+        var sharpStr = text.match('^#*')[0];
+        if (sharpStr == '') {
+            continue
+        }
+
+        var finalText = text.split(sharpStr).slice(1).join('');
+
         // H1
-        if(tagName == 'h1'){
+        if (sharpStr.length == 1) {
             headerInfo['h1'] += 1;
             headerInfo['h2'] = 0;
             headerInfo['h3'] = 0;
@@ -40,9 +69,8 @@ function addDocNo(){
             headerInfo['h6'] = 0;
         }
 
-        alert(3);
         // H2
-        if(tagName == 'h2'){
+        if (sharpStr.length == 2) {
             headerInfo['h2'] += 1;
             headerInfo['h3'] = 0;
             headerInfo['h4'] = 0;
@@ -50,49 +78,43 @@ function addDocNo(){
             headerInfo['h6'] = 0;
         }
 
-        alert(4);
         // H3
-        if(tagName == 'h3'){
+        if (sharpStr.length == 3) {
             headerInfo['h3'] += 1;
             headerInfo['h4'] = 0;
             headerInfo['h5'] = 0;
             headerInfo['h6'] = 0;
         }
 
-        alert(5);
         // H4
-        if(tagName == 'h4'){
+        if (sharpStr.length == 4) {
             headerInfo['h4'] += 1;
             headerInfo['h5'] = 0;
             headerInfo['h6'] = 0;
         }
 
-        alert(6);
         // H5
-        if(tagName == 'h5'){
+        if (sharpStr.length == 5) {
             headerInfo['h5'] += 1;
             headerInfo['h6'] = 0;
         }
 
-        alert(7);
         // H6
-        if(tagName == 'h6'){
+        if (sharpStr.length == 6) {
             headerInfo['h6'] += 1;
         }
 
-        alert(8);
-        var elemtext = elem.textContent;
-
-        alert(9);
         var number = '';
-        // for(var h in headerInfo){
-        //     number += headerInfo[h] + '.';
-        // }
-        //
-        // alert(number + elemtext);
+        for (var h in headerInfo) {
+            if (headerInfo[h] == 0) {
+                continue
+            }
+            number += headerInfo[h] + '.';
+        }
 
+        finalStr[i] = '<div>' + sharpStr + ' ' + number + finalText + '</div>';
     }
-    alert(10);
+    objApp.Window.CurrentDocument.SetHtml(finalStr.join(''));
 }
 
 addDocNo();
